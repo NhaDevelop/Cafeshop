@@ -1,0 +1,23 @@
+{
+  "name": "cafe-nux",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "dev:admin": "turbo run dev --filter=admin",
+    "dev:customer": "turbo run dev --filter=customer"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "dependencies": {
+    "@lucide/vue": "^1.17.0"
+  }
+}

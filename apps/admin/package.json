@@ -1,0 +1,30 @@
+{
+  "name": "admin",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 3000",
+    "build": "nuxt build",
+    "start": "node .output/server/index.mjs",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@cafe-nux/api-client": "workspace:*",
+    "@cafe-nux/types": "workspace:*",
+    "@cafe-nux/utils": "workspace:*",
+    "@pinia-plugin-persistedstate/nuxt": "^1.2.1",
+    "@pinia/nuxt": "^0.5.1",
+    "nuxt": "^3.12.0",
+    "pinia": "^2.1.7",
+    "pinia-plugin-persistedstate": "^4.7.1",
+    "socket.io-client": "^4.7.5",
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "tailwindcss": "^3",
+    "typescript": "^5.4.0"
+  }
+}
