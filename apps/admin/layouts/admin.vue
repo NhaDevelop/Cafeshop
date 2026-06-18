@@ -15,9 +15,7 @@
         <NuxtLink v-if="auth.user?.role === 'admin'" to="/admin/dashboard" class="nav-item" :class="{ active: route.path === '/admin/dashboard' }">
           <LayoutDashboard :size="20" class="nav-icon" /> <span class="nav-text">Dashboard</span>
         </NuxtLink>
-        <NuxtLink v-if="auth.user?.role === 'admin' || auth.user?.role === 'cashier'" to="/pos" class="nav-item" :class="{ active: route.path.startsWith('/pos') }">
-          <Monitor :size="20" class="nav-icon" /> <span class="nav-text">POS Terminal</span>
-        </NuxtLink>
+
         <NuxtLink v-if="auth.user?.role === 'admin' || auth.user?.role === 'kitchen'" to="/kitchen" class="nav-item" :class="{ active: route.path.startsWith('/kitchen') }">
           <ChefHat :size="20" class="nav-icon" /> <span class="nav-text">Kitchen</span>
         </NuxtLink>
@@ -62,6 +60,9 @@
     <h2 class="page-title">{{ pageTitle }}</h2>
   </div>
   <div class="topbar-right">
+    <NuxtLink v-if="auth.user?.role === 'admin' || auth.user?.role === 'cashier'" to="/pos" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-200 mr-2">
+      <Monitor :size="16" /> POS Terminal
+    </NuxtLink>
     <div class="time-badge">
       <Clock :size="14" class="icon-inline" /> {{ time }}
     </div>

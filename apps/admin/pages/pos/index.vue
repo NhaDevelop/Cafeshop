@@ -307,12 +307,19 @@
 
             <!-- Items -->
             <div class="px-4 py-3 flex-1 space-y-1.5">
-              <div v-for="item in order.items" :key="item.id" class="flex items-start justify-between gap-2">
-                <div class="flex-1">
-                  <span class="text-sm font-semibold text-slate-800">{{ item.name }}</span>
-                  <span v-if="item.note" class="block text-xs text-slate-400 italic">{{ item.note }}</span>
+              <div v-for="item in order.items" :key="item.id" class="flex items-start justify-between gap-2 border-b border-slate-50 pb-2 last:border-0 last:pb-0">
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-slate-800 truncate">{{ item.name }}<span v-if="item.size" class="text-xs font-normal text-slate-500"> ({{ item.size }})</span></p>
+                  
+                  <div class="flex flex-wrap gap-1 mt-1">
+                    <span v-if="item.sugarLevel" class="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"><Database :size="8"/> Sugar {{ item.sugarLevel }}</span>
+                    <span v-if="item.iceLevel" class="text-[9px] bg-cyan-50 text-cyan-700 border border-cyan-200 px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"><Snowflake :size="8"/> {{ item.iceLevel }}</span>
+                    <span v-for="m in item.modifiers" :key="m.id" class="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-semibold">{{ m.name }}</span>
+                  </div>
+
+                  <span v-if="item.note" class="block text-xs text-slate-400 italic mt-1 bg-slate-50 p-1 rounded">"{{ item.note }}"</span>
                 </div>
-                <span class="text-xs font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full flex-shrink-0">× {{ item.quantity }}</span>
+                <div class="text-xs font-black text-slate-500 bg-slate-100 px-2 py-1 rounded-lg flex-shrink-0">× {{ item.quantity }}</div>
               </div>
             </div>
 
