@@ -85,8 +85,11 @@ const server = http.createServer(async (req, res) => {
         quantity: i.quantity,
         price: basePrice,
         size: i.size,
+        sugarLevel: i.sugarLevel,
+        iceLevel: i.iceLevel,
         modifiers: i.modifiers ?? [],
-        subtotal: unitPrice * i.quantity,
+        itemDiscount: i.itemDiscount || 0,
+        subtotal: (unitPrice - (i.itemDiscount || 0)) * i.quantity,
         note: i.note
       }
     })

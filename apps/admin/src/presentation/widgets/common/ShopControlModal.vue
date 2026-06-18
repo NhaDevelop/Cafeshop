@@ -19,18 +19,25 @@
               <User :size="16" class="text-muted" />
               <span>Cashier: <strong>{{ cashierName }}</strong></span>
             </div>
-            <div class="info-row">
-              <CalendarDays :size="16" class="text-muted" />
-              <span>Business day: <strong>{{ businessDateLabel }}</strong></span>
+            
+            <div class="form-group">
+              <label>Business Date Override</label>
+              <input v-model="businessDateOverride" type="date" class="form-input" />
             </div>
+
+            <div class="form-group">
+              <label>Opening Cash Float ($)</label>
+              <input v-model.number="openingFloat" type="number" step="0.01" class="form-input text-lg font-bold" placeholder="0.00" />
+            </div>
+
             <div class="form-group">
               <label>Opening Note (optional)</label>
-              <textarea v-model="openingNote" rows="2" placeholder="e.g. Stocked up, ready for service…" />
+              <textarea v-model="openingNote" rows="2" placeholder="e.g. Stocked up, ready for service…" class="form-input" />
             </div>
           </div>
           <div class="modal-foot">
             <button class="btn btn-ghost" @click="$emit('update:modelValue', false)">Cancel</button>
-            <button class="btn open-btn" @click="confirmOpen">
+            <button class="btn open-btn" @click="confirmOpen" :disabled="openingFloat < 0">
               <Store :size="16" /> Open Shop Now
             </button>
           </div>
@@ -41,7 +48,7 @@
           <div class="modal-head close">
             <div class="status-icon close-icon"><BadgeX :size="32" /></div>
             <h2>Close Shop</h2>
-            <p class="text-muted">End of day summary</p>
+            <p class="text-muted">End of day summary for Shift: {{ shopStore.currentSession?.shiftId }}</p>
           </div>
           <div class="modal-body">
 
@@ -68,6 +75,18 @@
                 <span class="sum-val">{{ shopStore.openDuration }}</span>
               </div>
             </div>
+            
+            <!-- Float Check -->
+            <div class="float-check-box">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-bold text-slate-600">Expected Drawer:</span>
+                <span class="text-sm font-black text-slate-800">{{ currencyStore.format((shopStore.currentSession?.openingFloat || 0) + summary.revenue) }}</span>
+              </div>
+              <div class="form-group mb-0">
+                <label>Actual Closing Cash Float ($)</label>
+                <input v-model.number="closingFloat" type="number" step="0.01" class="form-input text-lg font-bold" :class="closingFloat < ((shopStore.currentSession?.openingFloat || 0) + summary.revenue) ? 'border-red-400 text-red-600' : 'border-emerald-400 text-emerald-600'" placeholder="0.00" />
+              </div>
+            </div>
 
             <!-- Top products -->
             <div class="top-section">
@@ -83,7 +102,7 @@
 
             <div class="form-group">
               <label>Closing Note (optional)</label>
-              <textarea v-model="closingNote" rows="2" placeholder="e.g. Busy Saturday, ran out of croissants…" />
+              <textarea v-model="closingNote" rows="2" placeholder="e.g. Busy Saturday, ran out of croissants…" class="form-input" />
             </div>
             <p v-if="cartStore.items.length > 0" class="cart-warning">
               Current unpaid cart will be cleared when the shop closes.
@@ -91,7 +110,7 @@
           </div>
           <div class="modal-foot">
             <button class="btn btn-ghost" @click="$emit('update:modelValue', false)">Cancel</button>
-            <button class="btn close-btn" @click="confirmClose">
+            <button class="btn close-btn" @click="confirmClose" :disabled="closingFloat < 0">
               <BadgeX :size="16" /> Close Shop
             </button>
           </div>
@@ -102,13 +121,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Store, BadgeX, Clock, User, CalendarDays } from '@lucide/vue'
 import { useShopStore } from '../../viewmodels/settings/useShopViewModel'
 import { useOrderStore } from '../../viewmodels/pos/useOrderViewModel'
 import { useCurrencyStore } from '../../viewmodels/settings/useCurrencyViewModel'
+import { useAuthStore } from '../../viewmodels/auth/useAuthViewModel'
+import { useCartStore } from '../../viewmodels/pos/useCartViewModel'
 
-defineProps<{ modelValue: boolean; mode: 'open' | 'close' }>()
+const props = defineProps<{ modelValue: boolean; mode: 'open' | 'close' }>()
 const emit = defineEmits(['update:modelValue', 'opened', 'closed'])
 
 const shopStore = useShopStore()
@@ -119,6 +140,23 @@ const authStore = useAuthStore()
 
 const openingNote = ref('')
 const closingNote = ref('')
+const openingFloat = ref(0)
+const closingFloat = ref(0)
+
+const today = new Date()
+const defaultDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+const businessDateOverride = ref(defaultDate)
+
+watch(() => props.modelValue, (val) => {
+  if (val && props.mode === 'open') {
+    businessDateOverride.value = defaultDate
+    openingFloat.value = 0
+    openingNote.value = ''
+  } else if (val && props.mode === 'close') {
+    closingFloat.value = (shopStore.currentSession?.openingFloat || 0) + summary.value.revenue
+    closingNote.value = ''
+  }
+})
 
 const nowStr = computed(() =>
   new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
@@ -159,14 +197,14 @@ const summary = computed(() => {
 })
 
 const confirmOpen = () => {
-  shopStore.openShop(cashierName.value, openingNote.value || undefined)
+  shopStore.openShop(cashierName.value, openingFloat.value, businessDateOverride.value, openingNote.value || undefined)
   openingNote.value = ''
   emit('opened')
   emit('update:modelValue', false)
 }
 
 const confirmClose = () => {
-  shopStore.closeShop(summary.value.orderCount, summary.value.revenue, closingNote.value || undefined)
+  shopStore.closeShop(summary.value.orderCount, summary.value.revenue, closingFloat.value, closingNote.value || undefined)
   cartStore.clearCart()
   closingNote.value = ''
   emit('closed')
@@ -197,6 +235,8 @@ const confirmClose = () => {
 .sum-val { font-size:22px; font-weight:800; color:var(--color-text); }
 .sum-val.accent { color:var(--color-primary); }
 
+.float-check-box { background:#F8FAFC; border:1px solid #E2E8F0; padding:16px; border-radius:12px; }
+
 .section-title { font-size:13px; font-weight:700; color:var(--color-muted); text-transform:uppercase; letter-spacing:.5px; margin:0 0 8px; }
 .product-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; background:var(--color-surface-2); font-size:13px; }
 .rank { font-size:12px; font-weight:800; color:var(--color-dim); width:22px; }
@@ -209,14 +249,15 @@ const confirmClose = () => {
 
 .form-group { display:flex; flex-direction:column; gap:6px; }
 .form-group label { font-size:12px; font-weight:700; color:var(--color-muted); }
-.form-group textarea { padding:10px 12px; border:1px solid var(--color-border); border-radius:8px; font-family:var(--font); font-size:13px; resize:none; outline:none; background:var(--color-surface); color:var(--color-text); }
-.form-group textarea:focus { border-color:var(--color-primary); }
+.form-input { padding:10px 12px; border:1px solid var(--color-border); border-radius:8px; font-family:var(--font); font-size:14px; outline:none; background:white; color:var(--color-text); width:100%; transition:border-color 0.2s; }
+.form-input:focus { border-color:var(--color-primary); }
 
 .modal-foot { padding:16px 28px 24px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--color-border); }
 .open-btn { background:#16a34a; color:white; padding:12px 20px; border-radius:8px; font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px; }
 .close-btn { background:#ea580c; color:white; padding:12px 20px; border-radius:8px; font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px; }
-.open-btn:hover { background:#15803d; }
-.close-btn:hover { background:#c2410c; }
+.open-btn:hover:not(:disabled) { background:#15803d; }
+.close-btn:hover:not(:disabled) { background:#c2410c; }
+.open-btn:disabled, .close-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .modal-enter-active, .modal-leave-active { transition:all .25s ease; }
 .modal-enter-from, .modal-leave-to { opacity:0; transform:scale(0.96); }

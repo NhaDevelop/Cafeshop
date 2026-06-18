@@ -120,14 +120,28 @@
       <!-- Cart Panel -->
       <aside class="w-[360px] flex-shrink-0 bg-white border-l border-slate-100 flex flex-col">
         <div class="px-5 pt-5 pb-4 border-b border-slate-100 space-y-3">
-          <div class="flex items-center gap-3 bg-slate-50 rounded-xl px-3.5 py-2.5">
-            <MapPin :size="14" class="text-slate-400 flex-shrink-0" />
-            <input v-model="cartStore.tableNumber" type="text" placeholder="Table number (optional)" :disabled="!shopStore.isOpen" class="flex-1 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none disabled:cursor-not-allowed" />
-          </div>
-          <div class="flex items-center gap-3 bg-slate-50 rounded-xl px-3.5 py-2.5">
-            <UserRound :size="14" class="text-slate-400 flex-shrink-0" />
-            <input v-model="cartStore.customerPhone" type="tel" placeholder="Customer phone (loyalty)" :disabled="!shopStore.isOpen" class="flex-1 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none disabled:cursor-not-allowed" />
-          </div>
+          <button class="w-full flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors rounded-xl px-3.5 py-2.5 text-left border border-transparent hover:border-slate-200" @click="showTableModal = true" :disabled="!shopStore.isOpen">
+            <div class="flex items-center gap-3">
+              <MapPin :size="14" class="text-indigo-500 flex-shrink-0" />
+              <span class="text-sm font-semibold" :class="cartStore.tableNumber ? 'text-slate-800' : 'text-slate-400'">
+                {{ cartStore.tableNumber ? `Table ${cartStore.tableNumber}` : 'Select Table' }}
+              </span>
+            </div>
+            <ChevronRight :size="14" class="text-slate-400" />
+          </button>
+          
+          <button class="w-full flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors rounded-xl px-3.5 py-2.5 text-left border border-transparent hover:border-slate-200" @click="showCustomerModal = true" :disabled="!shopStore.isOpen">
+            <div class="flex items-center gap-3">
+              <UserRound :size="14" class="text-emerald-500 flex-shrink-0" />
+              <div class="flex flex-col">
+                <span class="text-sm font-semibold" :class="cartStore.customerName ? 'text-slate-800' : 'text-slate-400'">
+                  {{ cartStore.customerName || 'Walk-in Customer' }}
+                </span>
+                <span v-if="cartStore.customerPhone" class="text-[10px] font-bold text-slate-400">{{ cartStore.customerPhone }}</span>
+              </div>
+            </div>
+            <ChevronRight :size="14" class="text-slate-400" />
+          </button>
         </div>
 
         <div class="flex-1 overflow-y-auto px-5 py-4 space-y-2">
@@ -139,10 +153,22 @@
           <div v-for="item in cartStore.items" :key="item.id" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors group/item">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-semibold text-slate-800 truncate">{{ item.name }}<span v-if="item.size" class="text-xs font-normal text-slate-400"> ({{ item.size }})</span></p>
-              <div v-if="item.modifiers && item.modifiers.length > 0" class="flex flex-wrap gap-1 mt-1">
+              
+              <div class="flex flex-wrap gap-1 mt-1">
+                <span v-if="item.sugarLevel" class="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"><Database :size="8"/> Sugar {{ item.sugarLevel }}</span>
+                <span v-if="item.iceLevel" class="text-[9px] bg-cyan-50 text-cyan-700 border border-cyan-200 px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"><Snowflake :size="8"/> {{ item.iceLevel }}</span>
                 <span v-for="m in item.modifiers" :key="m.id" class="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-semibold">{{ m.name }}</span>
               </div>
-              <p class="text-xs text-slate-400 mt-0.5">{{ currencyStore.format(item.price) }} each</p>
+              
+              <div class="flex items-center justify-between mt-1.5">
+                <p class="text-xs text-slate-400">{{ currencyStore.format(item.price) }} base</p>
+                <!-- Per-item Discount -->
+                <button class="text-[10px] font-bold px-1.5 py-0.5 rounded transition-colors" 
+                  :class="item.itemDiscount && item.itemDiscount > 0 ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'"
+                  @click="promptItemDiscount(item)">
+                  <Percent :size="10" class="inline" /> {{ item.itemDiscount && item.itemDiscount > 0 ? `-${currencyStore.format(item.itemDiscount)}` : 'Disc' }}
+                </button>
+              </div>
             </div>
             <div class="flex items-center gap-1.5 bg-white rounded-xl px-1 py-1 shadow-sm">
               <button class="w-6 h-6 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 transition-colors" :disabled="!shopStore.isOpen" @click.stop="updateCartQty(item.id, item.quantity - 1)">
@@ -269,12 +295,13 @@
               </div>
               <span class="px-3 py-1 rounded-full text-xs font-black capitalize"
                 :class="{
-                  'bg-amber-100 text-amber-700': order.status === 'pending',
+                  'bg-red-100 text-red-700': order.paymentStatus === 'unpaid',
+                  'bg-amber-100 text-amber-700': order.paymentStatus === 'paid' && order.status === 'pending',
                   'bg-indigo-100 text-indigo-700': order.status === 'preparing',
                   'bg-emerald-100 text-emerald-700': order.status === 'ready',
                   'bg-slate-200 text-slate-500': order.status === 'completed' || order.status === 'cancelled',
                 }">
-                {{ order.status }}
+                {{ order.paymentStatus === 'unpaid' ? 'Unpaid' : order.status }}
               </span>
             </div>
 
@@ -299,6 +326,13 @@
               <!-- Action buttons -->
               <div class="flex gap-2">
                 <button
+                  v-if="order.paymentStatus === 'unpaid' && order.status !== 'completed' && order.status !== 'cancelled'"
+                  class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors active:scale-95"
+                  @click="checkoutIncomingOrder(order)"
+                >
+                  <CreditCard :size="14" /> Pay
+                </button>
+                <button
                   v-if="order.status === 'pending'"
                   class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors active:scale-95"
                   :disabled="updatingOrderId === order.id"
@@ -315,13 +349,6 @@
                 >
                   <Bell :size="14" />
                   {{ updatingOrderId === order.id ? 'Updating…' : 'Mark Ready' }}
-                </button>
-                <button
-                  v-if="order.paymentStatus === 'unpaid' && order.status !== 'completed' && order.status !== 'cancelled'"
-                  class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition-colors active:scale-95"
-                  @click="checkoutIncomingOrder(order)"
-                >
-                  <CreditCard :size="14" /> Pay
                 </button>
                 <button
                   v-if="order.status === 'ready' && order.paymentStatus === 'paid'"
@@ -370,6 +397,34 @@
             <p class="text-[10px] font-bold uppercase tracking-widest text-indigo-500 mb-0.5">{{ getCategoryName(selectedProductForOptions.categoryId) }}</p>
             <h3 class="text-xl font-black text-slate-800">{{ selectedProductForOptions.name }}</h3>
             <p v-if="selectedProductForOptions.description" class="text-sm text-slate-400 mt-1">{{ selectedProductForOptions.description }}</p>
+            
+            <!-- Sugar Level (if available) -->
+            <div v-if="selectedProductForOptions.sugarLevels?.length" class="mt-5">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Sugar Level</p>
+              <div class="grid grid-cols-5 gap-2">
+                <button v-for="sl in selectedProductForOptions.sugarLevels" :key="sl"
+                  class="py-2.5 rounded-xl border-2 transition-all active:scale-95 flex flex-col items-center justify-center gap-1"
+                  :class="selectedOptions.sugarLevel === sl ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-100 bg-white text-slate-500 hover:border-amber-200'"
+                  @click="selectedOptions.sugarLevel = sl">
+                  <Database :size="14" />
+                  <span class="text-[10px] font-bold">{{ sl }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Ice Level (if available) -->
+            <div v-if="selectedProductForOptions.iceLevels?.length" class="mt-5">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Ice Level</p>
+              <div class="grid grid-cols-4 gap-2">
+                <button v-for="il in selectedProductForOptions.iceLevels" :key="il"
+                  class="py-2.5 rounded-xl border-2 transition-all active:scale-95 flex flex-col items-center justify-center gap-1"
+                  :class="selectedOptions.iceLevel === il ? 'border-cyan-500 bg-cyan-50 text-cyan-700' : 'border-slate-100 bg-white text-slate-500 hover:border-cyan-200'"
+                  @click="selectedOptions.iceLevel = il">
+                  <Snowflake :size="14" />
+                  <span class="text-[10px] font-bold leading-tight text-center px-1">{{ il }}</span>
+                </button>
+              </div>
+            </div>
             
             <!-- Sizes -->
             <div v-if="productSizes(selectedProductForOptions).length > 0" class="mt-5">
@@ -422,6 +477,117 @@
     <ReceiptModal v-model="showReceipt" :order="lastCompletedOrder" />
     <ViewOrdersDrawer v-model="showViewOrders" />
     <TransactionHistoryModal v-model="showTransactions" />
+
+    <!-- ─── Table Selection Modal ────────────────────────── -->
+    <Transition enter-active-class="transition-all duration-200" leave-active-class="transition-all duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
+      <div v-if="showTableModal" class="fixed inset-0 z-[2000] flex items-center justify-center p-5 bg-black/40 backdrop-blur-sm" @click.self="showTableModal = false">
+        <div class="w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] bg-slate-50">
+          <div class="px-6 py-5 border-b border-slate-200 bg-white flex justify-between items-center">
+            <div>
+              <h3 class="text-xl font-black text-slate-800">Select Table</h3>
+              <p class="text-sm text-slate-400 mt-0.5">Click a table to assign to current order</p>
+            </div>
+            <button class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 hover:text-red-500 transition-colors" @click="showTableModal = false">
+              <X :size="20" />
+            </button>
+          </div>
+          <div class="p-6 flex-1 overflow-y-auto">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div v-for="table in productStore.tables" :key="table.id" 
+                class="relative rounded-2xl border-2 p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:-translate-y-1"
+                :class="{
+                  'border-emerald-500 bg-emerald-50 shadow-emerald-100 shadow-lg': cartStore.tableId === table.id,
+                  'border-slate-200 bg-white hover:border-indigo-300': cartStore.tableId !== table.id && table.status === 'available',
+                  'border-amber-200 bg-amber-50 opacity-60 cursor-not-allowed': table.status === 'occupied',
+                  'border-indigo-200 bg-indigo-50 opacity-60 cursor-not-allowed': table.status === 'reserved'
+                }"
+                @click="table.status === 'available' || cartStore.tableId === table.id ? selectTable(table) : null">
+                
+                <div class="absolute top-2 right-2 flex items-center gap-1">
+                  <UserRound :size="10" class="text-slate-400" />
+                  <span class="text-[10px] font-bold text-slate-400">{{ table.capacity }}</span>
+                </div>
+                
+                <MapPin :size="24" :class="cartStore.tableId === table.id ? 'text-emerald-500' : (table.status === 'available' ? 'text-slate-300' : 'text-slate-400')" />
+                <span class="text-2xl font-black text-slate-700">{{ table.number }}</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest"
+                  :class="{
+                    'text-emerald-600': table.status === 'available' && cartStore.tableId !== table.id,
+                    'text-emerald-700': cartStore.tableId === table.id,
+                    'text-amber-600': table.status === 'occupied',
+                    'text-indigo-600': table.status === 'reserved'
+                  }">
+                  {{ cartStore.tableId === table.id ? 'Selected' : table.status }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-4 border-t border-slate-200 bg-white flex justify-between items-center">
+            <button class="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors" @click="clearTable">Clear Table</button>
+            <button class="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors" @click="showTableModal = false">Done</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ─── Customer Selection Modal ─────────────────────── -->
+    <Transition enter-active-class="transition-all duration-200" leave-active-class="transition-all duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
+      <div v-if="showCustomerModal" class="fixed inset-0 z-[2000] flex items-center justify-center p-5 bg-black/40 backdrop-blur-sm" @click.self="showCustomerModal = false">
+        <div class="w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+          <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="text-xl font-black text-slate-800">Select Customer</h3>
+            <button class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 hover:text-red-500 transition-colors" @click="showCustomerModal = false">
+              <X :size="18" />
+            </button>
+          </div>
+          <div class="p-5 border-b border-slate-100 bg-slate-50">
+            <div class="relative">
+              <Search :size="16" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input v-model="customerSearch" type="text" placeholder="Search by name or phone..." class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-indigo-400 text-sm font-semibold" autofocus />
+            </div>
+          </div>
+          <div class="flex-1 overflow-y-auto p-3">
+            <button class="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition-colors border-2"
+              :class="!cartStore.customerPhone ? 'border-emerald-500 bg-emerald-50' : 'border-transparent'"
+              @click="clearCustomer">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                  <UserRound :size="18" />
+                </div>
+                <div class="text-left">
+                  <p class="text-sm font-bold text-slate-700">Walk-in Customer</p>
+                  <p class="text-[10px] font-semibold text-slate-400">No loyalty tracking</p>
+                </div>
+              </div>
+              <CheckCircle v-if="!cartStore.customerPhone" :size="20" class="text-emerald-500" />
+            </button>
+            
+            <div class="my-2 h-px bg-slate-100 mx-4"></div>
+
+            <button v-for="cust in filteredCustomers" :key="cust.id" 
+              class="w-full flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition-colors border-2"
+              :class="cartStore.customerPhone === cust.phone ? 'border-indigo-500 bg-indigo-50' : 'border-transparent'"
+              @click="selectCustomer(cust)">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center font-black text-lg"
+                  :class="cartStore.customerPhone === cust.phone ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-600'">
+                  {{ cust.name.charAt(0) }}
+                </div>
+                <div class="text-left">
+                  <p class="text-sm font-bold text-slate-800">{{ cust.name }}</p>
+                  <p class="text-[11px] font-semibold text-slate-500">{{ cust.phone }}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-xs font-black text-amber-500">{{ cust.points }} pts</p>
+                <p class="text-[10px] font-semibold text-slate-400">{{ cust.totalOrders }} orders</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
   </div>
 </template>
 
@@ -432,11 +598,11 @@ import {
   LayoutGrid, Search, ShoppingCart, CreditCard, Coffee, UtensilsCrossed, CakeSlice, CupSoda,
   Plus, Minus, Trash2, CheckCircle, Pause, XCircle, ListOrdered, RefreshCw, ArrowRightLeft,
   Edit2, Headphones, Monitor, Watch, Shirt, Laptop, MapPin, X, BadgeX, UserRound,
-  ChefHat, Bell, Clock, Check
+  ChefHat, Bell, Clock, Check, ChevronRight, Snowflake, Database, Percent
 } from '@lucide/vue'
-import type { Category, MenuItem, ProductSize, ProductModifier } from '@cafe-nux/types'
-import { useCurrencyStore } from '../src/presentation/viewmodels/settings/useCurrencyViewModel'
-import { orderRepository } from '../src/data/repositories/order.repository'
+import type { Category, MenuItem, ProductSize, ProductModifier, SugarLevel, IceLevel, Table, Customer } from '../../src/types'
+import { useCurrencyStore } from '../../src/presentation/viewmodels/settings/useCurrencyViewModel'
+import { orderRepository } from '../../src/data/repositories/order.repository'
 
 definePageMeta({ layout: 'pos', middleware: 'auth' })
 
@@ -532,15 +698,20 @@ const productPriceLabel = (item: MenuItem) => {
 }
 
 const selectedProductForOptions = ref<MenuItem | null>(null)
-const selectedOptions = ref<{ size: string | null, modifiers: string[] }>({ size: null, modifiers: [] })
+const selectedOptions = ref<{ size: string | null, modifiers: string[], sugarLevel: SugarLevel | null, iceLevel: IceLevel | null }>({ size: null, modifiers: [], sugarLevel: null, iceLevel: null })
 
 const handleProductClick = (item: MenuItem) => {
   if (!ensureShopOpen()) return
-  if (productHasOptions(item)) {
+  if (productHasOptions(item) || item.sugarLevels?.length || item.iceLevels?.length) {
     selectedProductForOptions.value = item
     // Default size selection if any
     const sizes = productSizes(item)
-    selectedOptions.value = { size: sizes.length ? sizes[0].name : null, modifiers: [] }
+    selectedOptions.value = { 
+      size: sizes.length ? sizes[0].name : null, 
+      modifiers: [],
+      sugarLevel: item.sugarLevels?.length ? '50%' : null,
+      iceLevel: item.iceLevels?.length ? 'Normal Ice' : null
+    }
   } else {
     cartStore.addItem({ id: item.id, name: item.name, price: getDiscountedPriceVal(item.price, item.discount) })
     showToast(`${item.name} added`)
@@ -594,11 +765,58 @@ const confirmAddOptions = () => {
     name: item.name, 
     price: getDiscountedPriceVal(basePrice, item.discount), 
     size: selectedOptions.value.size || undefined,
+    sugarLevel: selectedOptions.value.sugarLevel || undefined,
+    iceLevel: selectedOptions.value.iceLevel || undefined,
     modifiers: selectedMods
   })
   
   selectedProductForOptions.value = null
   showToast(`${item.name} added`)
+}
+
+// ── Item Discount ─────────────────────────────────────────
+const promptItemDiscount = (item: any) => {
+  if (!ensureShopOpen()) return
+  const current = item.itemDiscount || 0
+  const input = prompt(`Enter discount amount for ${item.name} ($):\nCurrent: $${current}`, current.toString())
+  if (input === null) return
+  const val = parseFloat(input)
+  if (!isNaN(val) && val >= 0) {
+    cartStore.updateItemDiscount(item.id, val)
+    showToast('Item discount updated')
+  } else {
+    showToast('Invalid discount amount', 'error')
+  }
+}
+
+// ── Table & Customer Modals ───────────────────────────────
+const showTableModal = ref(false)
+const showCustomerModal = ref(false)
+const customerSearch = ref('')
+
+const filteredCustomers = computed(() => {
+  if (!customerSearch.value) return productStore.customers
+  return productStore.searchCustomers(customerSearch.value)
+})
+
+const selectTable = (table: Table) => {
+  cartStore.setTable(table.id, table.number.toString())
+  showTableModal.value = false
+}
+
+const clearTable = () => {
+  cartStore.setTable('', '')
+  showTableModal.value = false
+}
+
+const selectCustomer = (customer: Customer) => {
+  cartStore.setCustomer(customer.phone, customer.name)
+  showCustomerModal.value = false
+}
+
+const clearCustomer = () => {
+  cartStore.setCustomer('', '')
+  showCustomerModal.value = false
 }
 
 // ── Orders tab state ─────────────────────────────────────
@@ -609,21 +827,29 @@ const updatingOrderId = ref<string | null>(null)
 let ordersInterval: ReturnType<typeof setInterval> | undefined
 
 const orderFilters = [
-  { value: 'all', label: 'All', dot: 'bg-slate-400', activeBg: 'bg-slate-800', activeText: 'text-white' },
-  { value: 'pending', label: 'Pending', dot: 'bg-amber-500', activeBg: 'bg-amber-100', activeText: 'text-amber-700' },
-  { value: 'preparing', label: 'Preparing', dot: 'bg-indigo-500', activeBg: 'bg-indigo-100', activeText: 'text-indigo-700' },
+  { value: 'unpaid', label: 'Pending Payment', dot: 'bg-red-500', activeBg: 'bg-red-100', activeText: 'text-red-700' },
+  { value: 'in_progress', label: 'Paid / In Progress', dot: 'bg-indigo-500', activeBg: 'bg-indigo-100', activeText: 'text-indigo-700' },
   { value: 'ready', label: 'Ready', dot: 'bg-emerald-500', activeBg: 'bg-emerald-100', activeText: 'text-emerald-700' },
-  { value: 'completed', label: 'Done', dot: 'bg-slate-300', activeBg: 'bg-slate-100', activeText: 'text-slate-600' },
+  { value: 'completed', label: 'Completed', dot: 'bg-slate-300', activeBg: 'bg-slate-100', activeText: 'text-slate-600' },
+  { value: 'all', label: 'All Orders', dot: 'bg-slate-400', activeBg: 'bg-slate-800', activeText: 'text-white' },
 ]
 
 const filteredOrders = computed(() => {
   if (orderStatusFilter.value === 'all') return liveOrders.value
-  return liveOrders.value.filter(o => o.status === orderStatusFilter.value)
+  if (orderStatusFilter.value === 'unpaid') return liveOrders.value.filter(o => o.paymentStatus === 'unpaid' && o.status !== 'completed' && o.status !== 'cancelled')
+  if (orderStatusFilter.value === 'in_progress') return liveOrders.value.filter(o => o.paymentStatus === 'paid' && (o.status === 'pending' || o.status === 'preparing'))
+  if (orderStatusFilter.value === 'ready') return liveOrders.value.filter(o => o.status === 'ready')
+  if (orderStatusFilter.value === 'completed') return liveOrders.value.filter(o => o.status === 'completed' || o.status === 'cancelled')
+  return liveOrders.value
 })
 
 const getOrderCount = (status: string) => {
   if (status === 'all') return liveOrders.value.length
-  return liveOrders.value.filter(o => o.status === status).length
+  if (status === 'unpaid') return liveOrders.value.filter(o => o.paymentStatus === 'unpaid' && o.status !== 'completed' && o.status !== 'cancelled').length
+  if (status === 'in_progress') return liveOrders.value.filter(o => o.paymentStatus === 'paid' && (o.status === 'pending' || o.status === 'preparing')).length
+  if (status === 'ready') return liveOrders.value.filter(o => o.status === 'ready').length
+  if (status === 'completed') return liveOrders.value.filter(o => o.status === 'completed' || o.status === 'cancelled').length
+  return 0
 }
 
 const refreshOrders = async () => {
@@ -695,7 +921,12 @@ const showHoldOrders = ref(false)
 const handleHold = () => {
   if (!ensureShopOpen('Open shop before holding orders')) return
   if (cartStore.items.length === 0) { showHoldOrders.value = true; return }
-  holdStore.holdCart({ items: cartStore.items, tableNumber: cartStore.tableNumber, customerPhone: cartStore.customerPhone || undefined, total: cartStore.total })
+  holdStore.holdCart({ 
+    items: cartStore.items, 
+    tableNumber: cartStore.tableNumber, 
+    customerPhone: cartStore.customerPhone || undefined, 
+    total: cartStore.total 
+  })
   cartStore.clearCart()
   showToast('Order held')
 }
@@ -779,12 +1010,40 @@ const onPaymentCompleted = async (order: any) => {
   if (payingIncomingOrderId.value) {
     try {
       await orderRepository.updatePaymentStatus(payingIncomingOrderId.value, 'paid')
-      await completeIncomingOrder(liveOrders.value.find(o => o.id === payingIncomingOrderId.value)!)
     } catch (e) {
       console.error(e)
     } finally {
       payingIncomingOrderId.value = null
       refreshOrders()
+      showToast('Payment applied to order')
+      cartStore.clearCart()
+    }
+  } else {
+    // Scenario 1: New POS order. Customer pays, and it goes to the Queue.
+    try {
+      const newOrderPayload = {
+        tableId: cartStore.tableId || undefined,
+        tableLabel: cartStore.tableNumber ? `Table ${cartStore.tableNumber}` : undefined,
+        source: 'pos' as const,
+        items: cartStore.items.map(i => ({
+          menuItemId: i.menuItemId,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+          size: i.size,
+          sugarLevel: i.sugarLevel,
+          iceLevel: i.iceLevel,
+          modifiers: i.modifiers,
+          itemDiscount: i.itemDiscount
+        }))
+      }
+      const createdOrder = await orderRepository.create(newOrderPayload)
+      await orderRepository.updatePaymentStatus(createdOrder.id, 'paid')
+      refreshOrders()
+      showToast('Order Paid and Sent to Kitchen')
+      cartStore.clearCart()
+    } catch (e) {
+      console.error('Failed to create order in queue', e)
     }
   }
 }

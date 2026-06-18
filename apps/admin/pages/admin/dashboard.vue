@@ -247,8 +247,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { DollarSign, ClipboardList, ReceiptText, Utensils, Trophy, RefreshCw, PencilLine, Coffee, Eye } from '@lucide/vue'
-import { useDashboardStore } from '../src/presentation/viewmodels/dashboard/useDashboardViewModel'
-import { useCurrencyStore } from '../src/presentation/viewmodels/settings/useCurrencyViewModel'
+import { useDashboardStore } from '../../src/presentation/viewmodels/dashboard/useDashboardViewModel'
+import { useCurrencyStore } from '../../src/presentation/viewmodels/settings/useCurrencyViewModel'
 
 definePageMeta({ layout: 'admin', middleware: 'auth' })
 

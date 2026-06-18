@@ -12,7 +12,7 @@
 
       <nav class="side-nav">
         <div class="nav-label">Menu</div>
-        <NuxtLink v-if="auth.user?.role === 'admin'" to="/dashboard" class="nav-item" :class="{ active: route.path === '/dashboard' }">
+        <NuxtLink v-if="auth.user?.role === 'admin'" to="/admin/dashboard" class="nav-item" :class="{ active: route.path === '/admin/dashboard' }">
           <LayoutDashboard :size="20" class="nav-icon" /> <span class="nav-text">Dashboard</span>
         </NuxtLink>
         <NuxtLink v-if="auth.user?.role === 'admin' || auth.user?.role === 'cashier'" to="/pos" class="nav-item" :class="{ active: route.path.startsWith('/pos') }">
@@ -21,28 +21,28 @@
         <NuxtLink v-if="auth.user?.role === 'admin' || auth.user?.role === 'kitchen'" to="/kitchen" class="nav-item" :class="{ active: route.path.startsWith('/kitchen') }">
           <ChefHat :size="20" class="nav-icon" /> <span class="nav-text">Kitchen</span>
         </NuxtLink>
-        <NuxtLink v-if="auth.user?.role === 'admin'" to="/daily-sales" class="nav-item" :class="{ active: route.path === '/daily-sales' }">
+        <NuxtLink v-if="auth.user?.role === 'admin'" to="/admin/daily-sales" class="nav-item" :class="{ active: route.path === '/admin/daily-sales' }">
           <CalendarDays :size="20" class="nav-icon" /> <span class="nav-text">Daily Sales</span>
         </NuxtLink>
-        <NuxtLink v-if="auth.user?.role === 'admin'" to="/reports" class="nav-item" :class="{ active: route.path.startsWith('/reports') }">
+        <NuxtLink v-if="auth.user?.role === 'admin'" to="/admin/reports" class="nav-item" :class="{ active: route.path.startsWith('/admin/reports') }">
           <LineChart :size="20" class="nav-icon" /> <span class="nav-text">Reports</span>
         </NuxtLink>
 
         <template v-if="auth.user?.role === 'admin'">
           <div class="nav-label mt-4">Management</div>
-          <NuxtLink to="/products" class="nav-item" :class="{ active: route.path.startsWith('/products') }">
+          <NuxtLink to="/admin/products" class="nav-item" :class="{ active: route.path.startsWith('/admin/products') }">
             <Package :size="20" class="nav-icon" /> <span class="nav-text">Products</span>
           </NuxtLink>
-          <NuxtLink to="/inventory" class="nav-item" :class="{ active: route.path.startsWith('/inventory') }">
-            <Package :size="20" class="nav-icon" /> <span class="nav-text">Inventory</span>
+          <NuxtLink to="/admin/inventory" class="nav-item" :class="{ active: route.path.startsWith('/admin/inventory') }">
+            <Layers :size="20" class="nav-icon" /> <span class="nav-text">Inventory</span>
           </NuxtLink>
-          <NuxtLink to="/shifts" class="nav-item" :class="{ active: route.path.startsWith('/shifts') }">
+          <NuxtLink to="/admin/shifts" class="nav-item" :class="{ active: route.path.startsWith('/admin/shifts') }">
             <Clock :size="20" class="nav-icon" /> <span class="nav-text">Shifts</span>
           </NuxtLink>
-          <NuxtLink to="/loyalty" class="nav-item" :class="{ active: route.path.startsWith('/loyalty') }">
-            <User :size="20" class="nav-icon" /> <span class="nav-text">Loyalty</span>
+          <NuxtLink to="/admin/loyalty" class="nav-item" :class="{ active: route.path.startsWith('/admin/loyalty') }">
+            <Users :size="20" class="nav-icon" /> <span class="nav-text">Loyalty</span>
           </NuxtLink>
-          <NuxtLink to="/expenses" class="nav-item" :class="{ active: route.path.startsWith('/expenses') }">
+          <NuxtLink to="/admin/expenses" class="nav-item" :class="{ active: route.path.startsWith('/admin/expenses') }">
             <Wallet :size="20" class="nav-icon" /> <span class="nav-text">Expenses</span>
           </NuxtLink>
         </template>
@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { Monitor, ChefHat, LayoutDashboard, LineChart, Package, LogOut, Coffee, Clock, User, CalendarDays, Wallet } from '@lucide/vue'
+import { Monitor, ChefHat, LayoutDashboard, LineChart, Package, LogOut, Coffee, Clock, User, Users, CalendarDays, Wallet, Layers } from '@lucide/vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -105,16 +105,17 @@ const handleLogout = async () => {
 }
 
 const pageTitle = computed(() => {
-  if (route.path.startsWith('/dashboard')) return 'Dashboard overview'
-  if (route.path.startsWith('/daily-sales')) return 'Daily sales details'
-  if (route.path.startsWith('/kitchen')) return 'Kitchen display'
-  if (route.path.startsWith('/reports')) return 'Sales reports'
-  if (route.path.startsWith('/products')) return 'Product management'
-  if (route.path.startsWith('/inventory')) return 'Inventory management'
-  if (route.path.startsWith('/shifts')) return 'Shift management'
-  if (route.path.startsWith('/loyalty')) return 'Customer loyalty'
-  if (route.path.startsWith('/expenses')) return 'Expense tracking'
-  return 'Cafe Admin'
+  if (route.path.startsWith('/admin/dashboard'))   return 'Dashboard Overview'
+  if (route.path.startsWith('/admin/daily-sales')) return 'Daily Sales'
+  if (route.path.startsWith('/admin/reports'))     return 'Sales Reports'
+  if (route.path.startsWith('/admin/products'))    return 'Product Management'
+  if (route.path.startsWith('/admin/inventory'))   return 'Inventory Management'
+  if (route.path.startsWith('/admin/shifts'))      return 'Shift Management'
+  if (route.path.startsWith('/admin/loyalty'))     return 'Customer Loyalty'
+  if (route.path.startsWith('/admin/expenses'))    return 'Expense Tracking'
+  if (route.path.startsWith('/kitchen'))           return 'Kitchen Display'
+  if (route.path.startsWith('/pos'))               return 'POS Terminal'
+  return 'Cafe NUX Admin'
 })
 </script>
 

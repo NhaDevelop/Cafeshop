@@ -31,9 +31,19 @@
               </div>
               <div class="summary-items">
                 <div v-for="item in cartStore.items" :key="item.id" class="s-item">
-                  <div class="s-item-name">
-                    {{ item.quantity }}x {{ item.name }}
-                    <span v-if="item.size" class="s-item-size">{{ item.size }}</span>
+                  <div class="s-item-name-wrap">
+                    <div class="s-item-name">
+                      {{ item.quantity }}x {{ item.name }}
+                      <span v-if="item.size" class="s-item-size">{{ item.size }}</span>
+                    </div>
+                    <div class="s-item-options" v-if="item.sugarLevel || item.iceLevel || item.modifiers?.length">
+                      <span v-if="item.sugarLevel">Sugar {{item.sugarLevel}}</span>
+                      <span v-if="item.iceLevel">{{item.iceLevel}}</span>
+                      <span v-for="m in item.modifiers" :key="m.id">+{{m.name}}</span>
+                    </div>
+                    <div class="s-item-options text-danger" v-if="item.itemDiscount && item.itemDiscount > 0">
+                      Discount: -${{ item.itemDiscount.toFixed(2) }}
+                    </div>
                   </div>
                   <div class="s-item-price">${{ item.subtotal.toFixed(2) }}</div>
                 </div>
@@ -59,12 +69,15 @@
             <div class="payment-input-pane">
               <h4>Payment Method</h4>
               <div class="method-pills">
-                <button v-for="m in methods" :key="m" class="method-pill" :class="{ active: selectedMethod === m }" @click="selectedMethod = m">
-                  {{ m }}
+                <button v-for="m in methods" :key="m.id" class="method-card" :class="{ active: selectedMethod === m.id }" @click="selectedMethod = m.id">
+                  <div class="method-icon-wrap" :class="selectedMethod === m.id ? 'bg-white text-indigo-600' : 'bg-slate-100 text-slate-500'">
+                    <component :is="m.icon" :size="24" />
+                  </div>
+                  <span class="method-name">{{ m.label }}</span>
                 </button>
               </div>
 
-              <div class="tendered-section" v-if="selectedMethod === 'Cash'">
+              <div class="tendered-section" v-if="selectedMethod === 'cash'">
                 <label>Amount Tendered</label>
                 <div class="tendered-input-wrap">
                   <span class="currency-symbol">$</span>
@@ -121,7 +134,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { CreditCard, X, Plus } from '@lucide/vue'
+import { CreditCard, X, Plus, Banknote, QrCode, Star } from '@lucide/vue'
 import { useAuthStore } from '../../viewmodels/auth/useAuthViewModel'
 
 const props = defineProps<{ modelValue: boolean }>()
@@ -135,8 +148,13 @@ const inventoryStore = useInventoryStore()
 const shiftStore = useShiftStore()
 const loyaltyStore = useLoyaltyStore()
 
-const methods = ['Cash', 'Card', 'Points', 'Deposit', 'Cheque', 'Gift Card']
-const selectedMethod = ref('Cash')
+const methods = [
+  { id: 'cash', label: 'Cash', icon: Banknote },
+  { id: 'card', label: 'Card', icon: CreditCard },
+  { id: 'qr', label: 'KHQR', icon: QrCode },
+  { id: 'points', label: 'Points', icon: Star },
+]
+const selectedMethod = ref('cash')
 const amountTendered = ref(0)
 const tenderedInput = ref<HTMLInputElement | null>(null)
 
@@ -146,7 +164,7 @@ const payments = ref<LocalPayment[]>([])
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
     payments.value = []
-    selectedMethod.value = 'Cash'
+    selectedMethod.value = 'cash'
     amountTendered.value = remainingBalance.value
     nextTick(() => {
       tenderedInput.value?.focus()
@@ -170,7 +188,7 @@ const quickAmounts = computed(() => {
 })
 
 const currentChange = computed(() => {
-  if (selectedMethod.value !== 'Cash') return 0
+  if (selectedMethod.value !== 'cash') return 0
   return Math.max(0, amountTendered.value - remainingBalance.value)
 })
 
@@ -185,11 +203,13 @@ const addPayment = () => {
   if (!canAddPayment.value) return
   
   const paymentAmount = Math.min(amountTendered.value, remainingBalance.value)
-  const changeGiven = selectedMethod.value === 'Cash' ? Math.max(0, amountTendered.value - remainingBalance.value) : 0
+  const changeGiven = selectedMethod.value === 'cash' ? Math.max(0, amountTendered.value - remainingBalance.value) : 0
+
+  const methodLabel = methods.find(m => m.id === selectedMethod.value)?.label || 'Unknown'
 
   payments.value.push({
     id: `pay_${Date.now().toString(36)}`,
-    method: selectedMethod.value,
+    method: methodLabel,
     amount: paymentAmount,
     tendered: amountTendered.value,
     change: changeGiven
@@ -237,13 +257,13 @@ const confirmPayment = () => {
     shiftId: shiftStore.currentShiftId ?? undefined,
     customerPhone: cartStore.customerPhone || undefined,
     change: totalChange,
-    status: 'completed' as const
+    status: 'pending' as const,
+    paymentStatus: 'paid' as const
   }
 
-  orderStore.addOrder(newOrder)
-  inventoryStore.consumeOrderItems(newOrder.items)
+  // orderStore.addOrder(newOrder as any)
+  // inventoryStore.consumeOrderItems(newOrder.items)
   if (cartStore.customerPhone) loyaltyStore.applyOrder(cartStore.customerPhone, newOrder.total)
-  cartStore.clearCart()
   
   emit('completed', newOrder)
   close()
@@ -270,20 +290,26 @@ h4 { font-size: 14px; font-weight: 700; color: #1E293B; margin-bottom: 16px; mar
 .receipt-info-row strong { color: #1E293B; }
 
 .summary-items { flex: 1; overflow-y: auto; margin-bottom: 16px; border-bottom: 1px dashed var(--color-border); padding-bottom: 16px; }
-.s-item { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: #334155; }
-.s-item-name { font-weight: 500; }
+.s-item { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 12px; color: #334155; align-items: flex-start; }
+.s-item-name-wrap { display: flex; flex-direction: column; gap: 2px; flex: 1; padding-right: 12px; }
+.s-item-name { font-weight: 600; color: #1E293B; line-height: 1.4; }
+.s-item-options { font-size: 11px; color: #64748B; display: flex; flex-wrap: wrap; gap: 4px; }
+.s-item-options span { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
 .s-item-size { display: inline-flex; margin-left: 4px; padding: 1px 6px; border-radius: 999px; background: #E0E7FF; color: #4338CA; font-size: 10px; font-weight: 800; vertical-align: middle; }
-.s-item-price { font-weight: 600; }
+.s-item-price { font-weight: 700; white-space: nowrap; }
 
 .summary-totals { display: flex; flex-direction: column; gap: 8px; }
 .s-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: 500; }
 .s-grand-total { font-size: 16px; font-weight: 700; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-border); }
 .s-remaining-total { font-size: 18px; font-weight: 800; margin-top: 4px; padding-top: 4px; border-top: 2px dashed var(--color-border); }
 
-.method-pills { display: flex; flex-wrap: wrap; gap: 8px; }
-.method-pill { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--color-border); background: white; font-size: 13px; font-weight: 600; cursor: pointer; color: #475569; transition: all 0.2s; }
-.method-pill:hover { border-color: var(--color-primary); }
-.method-pill.active { background: var(--color-primary); color: white; border-color: var(--color-primary); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+.method-pills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.method-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px 8px; border-radius: 12px; border: 2px solid var(--color-border); background: white; cursor: pointer; transition: all 0.2s; outline: none; }
+.method-card:hover { border-color: #cbd5e1; background: #f8fafc; }
+.method-card.active { border-color: var(--color-primary); background: #eef2ff; box-shadow: 0 4px 12px rgba(99,102,241,0.2); }
+.method-icon-wrap { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.method-name { font-size: 13px; font-weight: 700; color: #475569; }
+.method-card.active .method-name { color: var(--color-primary); }
 
 .tendered-section { display: flex; flex-direction: column; gap: 12px; background: #F8FAFC; padding: 20px; border-radius: 12px; border: 1px solid var(--color-border); }
 .tendered-section label { font-size: 13px; font-weight: 600; color: #475569; }

@@ -74,7 +74,7 @@
 
 <script setup lang="ts">
 import type { SalesSummary } from '@cafe-nux/types'
-import { reportRepository } from '../src/data/repositories/report.repository'
+import { reportRepository } from '../../src/data/repositories/report.repository'
 import { Download } from '@lucide/vue'
 
 definePageMeta({ layout: 'admin', middleware: 'auth' })

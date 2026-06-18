@@ -14,7 +14,7 @@
       </div>
       
       <div class="topbar-right">
-        <NuxtLink to="/dashboard" class="btn btn-primary top-dashboard-btn">
+        <NuxtLink to="/admin/dashboard" class="btn btn-primary top-dashboard-btn">
           <LayoutDashboard :size="16" /> Dashboard
         </NuxtLink>
         <button class="shop-status-btn" :class="shopStore.isOpen ? 'open' : 'closed'" @click="openShopControl">
@@ -23,12 +23,12 @@
           {{ shopStore.isOpen ? 'Close Shop' : 'Open Shop' }}
         </button>
         <div class="top-icons">
-          <button class="top-icon-btn"><Calculator :size="16" /></button>
-          <button class="top-icon-btn"><Maximize :size="16" /></button>
-          <button class="top-icon-btn"><Printer :size="16" /></button>
-          <button class="top-icon-btn"><RefreshCw :size="16" /></button>
-          <button class="top-icon-btn"><BarChart2 :size="16" /></button>
-          <button class="top-icon-btn"><Settings :size="16" /></button>
+          <button class="top-icon-btn" title="Calculator" @click="showCalculator = true"><Calculator :size="16" /></button>
+          <button class="top-icon-btn" title="Toggle Fullscreen" @click="toggleFullscreen"><Maximize :size="16" /></button>
+          <button class="top-icon-btn" title="Print Receipt" @click="printReceipt"><Printer :size="16" /></button>
+          <button class="top-icon-btn" title="Refresh Product Data" @click="refreshData"><RefreshCw :size="16" /></button>
+          <NuxtLink to="/admin/reports" class="top-icon-btn flex items-center justify-center" title="Reports"><BarChart2 :size="16" /></NuxtLink>
+          <NuxtLink to="/admin/products" class="top-icon-btn flex items-center justify-center" title="Settings"><Settings :size="16" /></NuxtLink>
         </div>
         <button class="btn btn-ghost logout-btn" @click="handleLogout" title="Logout">
           <User :size="16" />
@@ -39,17 +39,28 @@
       <slot />
     </main>
     <ShopControlModal v-model="showShopControl" :mode="shopStore.isOpen ? 'close' : 'open'" />
+    <CalculatorModal v-model="showCalculator" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { LayoutDashboard, Clock, Store, BadgeX, Calculator, Maximize, Printer, RefreshCw, BarChart2, Settings, User } from '@lucide/vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../src/presentation/viewmodels/auth/useAuthViewModel'
+import { useShopStore } from '../src/presentation/viewmodels/settings/useShopViewModel'
+import { useProductStore } from '../src/presentation/viewmodels/pos/useProductViewModel'
+import ShopControlModal from '../src/presentation/widgets/common/ShopControlModal.vue'
+import CalculatorModal from '../src/presentation/widgets/common/CalculatorModal.vue'
 
 const router = useRouter()
 const auth   = useAuthStore()
 const shopStore = useShopStore()
+const productStore = useProductStore()
+
 const time = ref('')
 const showShopControl = ref(false)
+const showCalculator = ref(false)
 const openShopControl = () => showShopControl.value = true
 let clockTimer: ReturnType<typeof setInterval> | undefined
 
@@ -66,6 +77,27 @@ onUnmounted(() => {
 const handleLogout = async () => {
   await auth.logout()
   router.push('/login')
+}
+
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => {
+      console.error(`Error attempting to enable fullscreen: ${err.message}`);
+    });
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+}
+
+const refreshData = async () => {
+  await productStore.fetchProducts()
+  alert('Product data refreshed!')
+}
+
+const printReceipt = () => {
+  window.print()
 }
 </script>
 

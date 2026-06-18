@@ -9,12 +9,15 @@ const businessDateKey = (value: string | Date = new Date()) => {
 }
 
 export interface ShopSession {
+  shiftId: string
   openedAt: string
   closedAt?: string
   businessDate: string
   openedBy: string
   openingNote?: string
   closingNote?: string
+  openingFloat: number
+  closingFloat: number
   totalOrders: number
   totalRevenue: number
 }
@@ -26,25 +29,29 @@ export const useShopStore = defineStore('shop', {
     sessionHistory: [] as ShopSession[]
   }),
   actions: {
-    openShop(cashier: string, note?: string) {
+    openShop(cashier: string, openingFloat: number, businessDateOverride?: string, note?: string) {
       if (this.isOpen && this.currentSession) return
       const openedAt = new Date()
       this.isOpen = true
       this.currentSession = {
+        shiftId: `SHIFT-${Date.now().toString(36).toUpperCase()}`,
         openedAt: openedAt.toISOString(),
-        businessDate: businessDateKey(openedAt),
+        businessDate: businessDateOverride || businessDateKey(openedAt),
         openedBy: cashier,
+        openingFloat,
+        closingFloat: 0,
         openingNote: note,
         totalOrders: 0,
         totalRevenue: 0
       }
     },
-    closeShop(totalOrders: number, totalRevenue: number, note?: string) {
+    closeShop(totalOrders: number, totalRevenue: number, closingFloat: number, note?: string) {
       if (!this.currentSession) return
       const closed: ShopSession = {
         ...this.currentSession,
         businessDate: this.currentSession.businessDate ?? businessDateKey(this.currentSession.openedAt),
         closedAt: new Date().toISOString(),
+        closingFloat,
         closingNote: note,
         totalOrders,
         totalRevenue
