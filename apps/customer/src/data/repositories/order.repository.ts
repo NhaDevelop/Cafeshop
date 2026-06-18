@@ -9,14 +9,18 @@ export const orderRepository = {
     let menuItems: any[] = []
     try { menuItems = await menuRepository.getMenuItems() } catch { /* use fallback */ }
 
-    const enrichedItems = (data.items ?? []).map((i, idx) => {
+    const enrichedItems = (data.items ?? []).map((i) => {
       const found = menuItems.find(m => m.id === i.menuItemId)
       return {
         menuItemId: i.menuItemId,
-        name: found?.name || 'Item',
+        name: found?.name || i.name || 'Item',
         quantity: i.quantity,
-        price: found?.price ?? 0,
-        note: i.note
+        price: i.price ?? found?.price ?? 0,
+        note: i.note,
+        size: i.size,
+        sugarLevel: i.sugarLevel,
+        iceLevel: i.iceLevel,
+        modifiers: i.modifiers
       }
     })
 

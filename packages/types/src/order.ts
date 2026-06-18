@@ -16,6 +16,8 @@ export interface OrderItem {
   quantity: number;
   price: number;
   size?: string;
+  sugarLevel?: string;
+  iceLevel?: string;
   modifiers?: OrderModifier[];
   note?: string;
   subtotal: number;
@@ -49,5 +51,5 @@ export interface CreateOrderDTO {
   tableLabel?: string;
   source: OrderSource;
   paymentStatus?: PaymentStatus;
-  items: { menuItemId: string; quantity: number; size?: string; modifiers?: OrderModifier[]; note?: string }[];
+  items: { menuItemId: string; name?: string; price?: number; quantity: number; size?: string; sugarLevel?: string; iceLevel?: string; modifiers?: OrderModifier[]; note?: string }[];
 }

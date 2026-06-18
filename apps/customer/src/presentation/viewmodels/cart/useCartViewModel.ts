@@ -1,21 +1,25 @@
 import { defineStore } from 'pinia'
 import type { MenuItem } from '../../../types'
 import { calculateTotal } from '../../../utils'
-interface CartItem { id: string; menuItemId: string; name: string; price: number; quantity: number; subtotal: number; note?: string; size?: string }
+interface CartItem { id: string; menuItemId: string; name: string; price: number; quantity: number; subtotal: number; note?: string; size?: string; sugarLevel?: string; iceLevel?: string; modifiers?: any[] }
 export const useCartStore = defineStore('cart', () => {
   const items   = ref<CartItem[]>([])
   const tableId = ref<string | null>(null)
   const totals  = computed(() => calculateTotal(items.value.reduce((s, i) => s + i.subtotal, 0)))
   const count   = computed(() => items.value.reduce((s, i) => s + i.quantity, 0))
   
-  const add = (item: MenuItem, sizeName?: string, note?: string) => {
-    const sizeObj = sizeName ? item.sizes?.find(s => s.name === sizeName) : null
-    const price = sizeObj ? sizeObj.price : item.price
-    const name = sizeName ? `${item.name} (${sizeName})` : item.name
+  const add = (item: MenuItem, options: { size?: string; sugarLevel?: string; iceLevel?: string; modifiers?: any[]; note?: string } = {}) => {
+    const { size, sugarLevel, iceLevel, modifiers = [], note } = options
+    const sizeObj = size ? item.sizes?.find(s => s.name === size) : null
+    let price = sizeObj ? sizeObj.price : item.price
+    const name = item.name
 
-    const existing = items.value.find(c => c.menuItemId === item.id && c.size === sizeName)
+    const modsTotal = modifiers.reduce((sum, m) => sum + m.price, 0)
+    price += modsTotal
+
+    const existing = items.value.find(c => c.menuItemId === item.id && c.size === size && c.sugarLevel === sugarLevel && c.iceLevel === iceLevel && JSON.stringify(c.modifiers) === JSON.stringify(modifiers))
     if (existing) { existing.quantity++; existing.subtotal = existing.quantity * price }
-    else items.value.push({ id: crypto.randomUUID(), menuItemId: item.id, name, price, quantity: 1, subtotal: price, note, size: sizeName })
+    else items.value.push({ id: crypto.randomUUID(), menuItemId: item.id, name, price, quantity: 1, subtotal: price, note, size, sugarLevel, iceLevel, modifiers })
   }
   
   const remove    = (id: string) => { items.value = items.value.filter(c => c.id !== id) }

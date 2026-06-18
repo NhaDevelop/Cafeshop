@@ -57,8 +57,14 @@
 
             <!-- Name + price -->
             <div class="flex-1 min-w-0">
-              <p class="text-[13px] font-bold text-slate-800 truncate">{{ item.name }}</p>
+              <p class="text-[13px] font-bold text-slate-800 truncate">{{ item.name }}<span v-if="item.size && typeof item.size === 'string'" class="font-normal text-slate-500"> ({{ item.size }})</span></p>
               <p class="text-xs text-slate-400 font-medium">${{ item.price.toFixed(2) }} each</p>
+              
+              <div class="flex flex-wrap gap-1 mt-1">
+                <span v-if="item.sugarLevel" class="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-semibold">Sugar {{ item.sugarLevel }}</span>
+                <span v-if="item.iceLevel" class="text-[9px] bg-cyan-50 text-cyan-700 border border-cyan-200 px-1.5 py-0.5 rounded font-semibold">{{ item.iceLevel }}</span>
+                <span v-for="m in item.modifiers" :key="m.id" class="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-semibold">{{ m.name }}</span>
+              </div>
             </div>
 
             <!-- Qty controls -->
@@ -216,7 +222,17 @@ const placeOrder = async () => {
       tableId:    isTakeaway ? undefined : tableId,
       tableLabel: isTakeaway ? 'Takeaway' : `Table ${tableId}`,
       source:     'online',
-      items:      cart.items.map(i => ({ menuItemId: i.menuItemId, name: i.name, price: i.price, quantity: i.quantity, note: note.value || undefined, size: i.size })),
+      items:      cart.items.map(i => ({ 
+        menuItemId: i.menuItemId, 
+        name: i.name, 
+        price: i.price, 
+        quantity: i.quantity, 
+        note: note.value || undefined, 
+        size: i.size,
+        sugarLevel: i.sugarLevel,
+        iceLevel: i.iceLevel,
+        modifiers: i.modifiers
+      })),
     })
     cart.clear()
     router.push(`/order/${order.id}`)

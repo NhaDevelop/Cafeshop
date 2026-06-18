@@ -100,28 +100,43 @@
         />
       </div>
 
-      <!-- Category chips -->
-      <div class="flex gap-2 overflow-x-auto scrollbar-hide pb-1 mb-5">
-        <button
-          class="flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all duration-200 border"
-          :class="menu.selectedCategory === null
-            ? 'bg-indigo-600 text-white border-indigo-600 shadow-glow'
-            : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'"
-          @click="menu.selectedCategory = null"
+      <!-- Category Dropdown -->
+      <div class="relative mb-5 z-20">
+        <div
+          @click="showCategoryDropdown = !showCategoryDropdown"
+          class="w-full flex items-center justify-between text-sm font-bold bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-card cursor-pointer hover:border-indigo-300 transition-colors"
         >
-          ✨ All
-        </button>
-        <button
-          v-for="cat in menu.categories"
-          :key="cat.id"
-          class="flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all duration-200 border"
-          :class="menu.selectedCategory === cat.id
-            ? 'bg-indigo-600 text-white border-indigo-600 shadow-glow'
-            : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'"
-          @click="menu.selectedCategory = cat.id"
-        >
-          {{ cat.name }}
-        </button>
+          <div class="flex items-center gap-2 truncate text-slate-800">
+            <span>{{ menu.selectedCategory === null ? '✨ All Categories' : menu.categories.find(c => c.id === menu.selectedCategory)?.name }}</span>
+          </div>
+          <ChevronDown :size="17" class="text-slate-400 transition-transform flex-shrink-0" :class="{'rotate-180': showCategoryDropdown}" />
+        </div>
+
+        <!-- Dropdown overlay -->
+        <div v-if="showCategoryDropdown" class="fixed inset-0 z-[40]" @click="showCategoryDropdown = false"></div>
+        
+        <!-- Dropdown menu -->
+        <Transition enter-active-class="transition-all duration-200 ease-out" leave-active-class="transition-all duration-150 ease-in" enter-from-class="opacity-0 -translate-y-2" leave-to-class="opacity-0 -translate-y-2">
+          <div v-if="showCategoryDropdown" class="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden z-[50] max-h-64 overflow-y-auto">
+            <button
+              class="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-left hover:bg-slate-50 transition-colors"
+              :class="menu.selectedCategory === null ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-700'"
+              @click="menu.selectedCategory = null; showCategoryDropdown = false"
+            >
+              <span>✨ All Categories</span>
+              <Check v-if="menu.selectedCategory === null" :size="16" class="ml-auto flex-shrink-0" />
+            </button>
+            <button
+              v-for="cat in menu.categories" :key="cat.id"
+              class="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-left hover:bg-slate-50 transition-colors"
+              :class="menu.selectedCategory === cat.id ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-700'"
+              @click="menu.selectedCategory = cat.id; showCategoryDropdown = false"
+            >
+              <span class="truncate">{{ cat.name }}</span>
+              <Check v-if="menu.selectedCategory === cat.id" :size="16" class="ml-auto flex-shrink-0" />
+            </button>
+          </div>
+        </Transition>
       </div>
 
       <!-- Loading skeleton -->
@@ -388,49 +403,91 @@
       </div>
     </Transition>
 
-    <!-- ─── Size Modal ───────────────────────────────────────────── -->
-    <Transition
-      enter-active-class="transition-all duration-300 ease-out"
-      leave-active-class="transition-all duration-200 ease-in"
-      enter-from-class="opacity-0 scale-95"
-      leave-to-class="opacity-0 scale-95"
-    >
-      <div v-if="sizeModalItem" class="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm" @click="sizeModalItem = null">
-        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative" @click.stop>
-          <button class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors" @click="sizeModalItem = null">
-            <X :size="16" />
-          </button>
-          
-          <div class="flex items-center gap-4 mb-5">
-            <div class="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-3xl overflow-hidden shrink-0">
-              <img v-if="sizeModalItem.imageUrl" :src="sizeModalItem.imageUrl" :alt="sizeModalItem.name" class="w-full h-full object-cover" />
-              <template v-else>{{ getEmoji(sizeModalItem) }}</template>
-            </div>
-            <div>
-              <h3 class="text-lg font-black text-slate-800 leading-tight">{{ sizeModalItem.name }}</h3>
-              <p class="text-sm text-slate-400 font-medium">Select size</p>
-            </div>
-          </div>
-          
-          <div class="flex flex-col gap-2.5 mb-6">
-            <button
-              v-for="size in sizeModalItem.sizes"
-              :key="size.name"
-              class="flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition-all duration-200 text-left"
-              :class="sizeModalSize === size.name ? 'border-indigo-600 bg-indigo-50 shadow-sm' : 'border-slate-100 hover:border-indigo-300 bg-white'"
-              @click="sizeModalSize = size.name"
-            >
-              <span class="font-bold" :class="sizeModalSize === size.name ? 'text-indigo-700' : 'text-slate-600'">{{ size.name }}</span>
-              <span class="font-black text-indigo-600">${{ size.price.toFixed(2) }}</span>
+    <!-- ─── Product Options Modal ────────────────────────── -->
+    <Transition enter-active-class="transition-all duration-200" leave-active-class="transition-all duration-150" enter-from-class="opacity-0" leave-to-class="opacity-0">
+      <div v-if="selectedProductForOptions" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click.self="selectedProductForOptions = null">
+        <div class="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+          <div class="relative h-44 bg-slate-100 flex-shrink-0">
+            <img v-if="selectedProductForOptions.imageUrl" :src="selectedProductForOptions.imageUrl" :alt="selectedProductForOptions.name" class="w-full h-full object-cover" />
+            <div v-else class="w-full h-full flex items-center justify-center text-6xl">{{ getEmoji(selectedProductForOptions) }}</div>
+            <button class="absolute top-3 right-3 w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-600 hover:text-red-500 shadow-sm transition-colors" @click="selectedProductForOptions = null">
+              <X :size="18" />
             </button>
           </div>
-          
-          <button
-            class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-glow hover:bg-indigo-700 active:scale-95 transition-all text-sm"
-            @click="confirmSizeAdd"
-          >
-            Add to Cart
-          </button>
+          <div class="p-5 flex-1 overflow-y-auto">
+            <h3 class="text-xl font-black text-slate-800">{{ selectedProductForOptions.name }}</h3>
+            <p v-if="selectedProductForOptions.description" class="text-sm text-slate-400 mt-1">{{ selectedProductForOptions.description }}</p>
+            
+            <!-- Sugar Level (if available) -->
+            <div v-if="selectedProductForOptions.sugarLevels?.length" class="mt-5">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Sugar Level</p>
+              <div class="grid grid-cols-5 gap-2">
+                <button v-for="sl in selectedProductForOptions.sugarLevels" :key="sl"
+                  class="py-2.5 rounded-xl border-2 transition-all active:scale-95 flex flex-col items-center justify-center gap-1"
+                  :class="selectedOptions.sugarLevel === sl ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-100 bg-white text-slate-500 hover:border-amber-200'"
+                  @click="selectedOptions.sugarLevel = sl">
+                  <Database :size="14" />
+                  <span class="text-[10px] font-bold">{{ sl }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Ice Level (if available) -->
+            <div v-if="selectedProductForOptions.iceLevels?.length" class="mt-5">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Ice Level</p>
+              <div class="grid grid-cols-4 gap-2">
+                <button v-for="il in selectedProductForOptions.iceLevels" :key="il"
+                  class="py-2.5 rounded-xl border-2 transition-all active:scale-95 flex flex-col items-center justify-center gap-1"
+                  :class="selectedOptions.iceLevel === il ? 'border-cyan-500 bg-cyan-50 text-cyan-700' : 'border-slate-100 bg-white text-slate-500 hover:border-cyan-200'"
+                  @click="selectedOptions.iceLevel = il">
+                  <Snowflake :size="14" />
+                  <span class="text-[10px] font-bold leading-tight text-center px-1">{{ il }}</span>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Sizes -->
+            <div v-if="productSizes(selectedProductForOptions).length > 0" class="mt-5">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Choose Size <span class="text-red-500">*</span></p>
+              <div class="space-y-2">
+                <button v-for="sz in productSizes(selectedProductForOptions)" :key="sz.name"
+                  class="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all active:scale-[0.98]"
+                  :class="selectedOptions.size === sz.name ? 'border-indigo-500 bg-indigo-50' : 'border-slate-100 bg-white hover:border-indigo-300'"
+                  @click="selectedOptions.size = sz.name">
+                  <span class="text-sm font-bold" :class="selectedOptions.size === sz.name ? 'text-indigo-700' : 'text-slate-700'">{{ sz.name }}</span>
+                  <span class="text-sm font-black" :class="selectedOptions.size === sz.name ? 'text-indigo-700' : 'text-slate-700'">${{ sz.price.toFixed(2) }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Modifiers -->
+            <div v-if="productModifiers(selectedProductForOptions).length > 0" class="mt-6">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Modifiers (Optional)</p>
+              <div class="space-y-2">
+                <button v-for="mod in productModifiers(selectedProductForOptions)" :key="mod.id"
+                  class="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all active:scale-[0.98]"
+                  :class="selectedOptions.modifiers.includes(mod.id) ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 bg-white hover:border-emerald-300'"
+                  @click="toggleModifier(mod.id)">
+                  <div class="flex items-center gap-3">
+                    <div class="w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors"
+                         :class="selectedOptions.modifiers.includes(mod.id) ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 bg-white text-transparent'">
+                      <Check :size="12" stroke-width="4" />
+                    </div>
+                    <span class="text-sm font-bold" :class="selectedOptions.modifiers.includes(mod.id) ? 'text-emerald-700' : 'text-slate-700'">{{ mod.name }}</span>
+                  </div>
+                  <span class="text-sm font-black" :class="selectedOptions.modifiers.includes(mod.id) ? 'text-emerald-700' : 'text-slate-500'">+${{ mod.price.toFixed(2) }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Footer -->
+          <div class="p-5 border-t border-slate-100 bg-slate-50 flex-shrink-0">
+            <button class="w-full flex items-center justify-between py-3.5 px-5 rounded-2xl bg-indigo-600 text-white transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="!canAddWithOptions" @click="confirmAddOptions">
+              <span class="font-bold">Add to Order</span>
+              <span class="font-black text-lg">${{ optionsTotalPrice.toFixed(2) }}</span>
+            </button>
+          </div>
         </div>
       </div>
     </Transition>
@@ -441,7 +498,7 @@
 <script setup lang="ts">
 import type { MenuItem } from '@cafe-nux/types'
 import {
-  Search, ShoppingCart, Plus, Check, X,
+  Search, ShoppingCart, Plus, Check, X, ChevronDown, Snowflake, Database,
   UtensilsCrossed, ClipboardList, ChefHat, Bell, Coffee, CheckCircle2, Star
 } from '@lucide/vue'
 import { orderRepository } from '../src/data/repositories/order.repository'
@@ -457,8 +514,41 @@ const activeOrders = ref<any[]>([])
 const ordersLoading = ref(false)
 const readyToast = ref(false)
 
-const sizeModalItem = ref<MenuItem | null>(null)
-const sizeModalSize = ref<string>('')
+const selectedProductForOptions = ref<MenuItem | null>(null)
+const selectedOptions = ref<{ size: string, sugarLevel: string, iceLevel: string, modifiers: string[] }>({ size: '', sugarLevel: '', iceLevel: '', modifiers: [] })
+const showCategoryDropdown = ref(false)
+
+const productSizes = (item: MenuItem | null) => item?.sizes || []
+const productModifiers = (item: MenuItem | null) => item?.modifiers || []
+
+const toggleModifier = (id: string) => {
+  const idx = selectedOptions.value.modifiers.indexOf(id)
+  if (idx > -1) selectedOptions.value.modifiers.splice(idx, 1)
+  else selectedOptions.value.modifiers.push(id)
+}
+
+const canAddWithOptions = computed(() => {
+  if (!selectedProductForOptions.value) return false
+  if (productSizes(selectedProductForOptions.value).length > 0 && !selectedOptions.value.size) return false
+  return true
+})
+
+const optionsTotalPrice = computed(() => {
+  if (!selectedProductForOptions.value) return 0
+  const item = selectedProductForOptions.value
+  let basePrice = item.price
+  if (selectedOptions.value.size) {
+    const sz = productSizes(item).find(s => s.name === selectedOptions.value.size)
+    if (sz) basePrice = sz.price
+  }
+  let total = basePrice
+  
+  if (selectedOptions.value.modifiers.length > 0) {
+    const mods = productModifiers(item).filter(m => selectedOptions.value.modifiers.includes(m.id))
+    total += mods.reduce((sum, m) => sum + m.price, 0)
+  }
+  return total
+})
 
 let prevReadySet = new Set<string>()
 let pollInterval: ReturnType<typeof setInterval>
@@ -513,18 +603,32 @@ const hasReadyOrder = computed(() => activeOrders.value.some(o => o.status === '
 const isInCart  = (id: string) => cart.items.some(i => i.menuItemId === id)
 const getCartQty = (id: string) => cart.items.filter(i => i.menuItemId === id).reduce((sum, item) => sum + item.quantity, 0)
 const handleAddItem = (item: MenuItem) => {
-  if (item.sizes && item.sizes.length > 0) {
-    sizeModalItem.value = item
-    sizeModalSize.value = item.sizes[0].name
+  if ((item.sizes && item.sizes.length > 0) || (item.sugarLevels && item.sugarLevels.length > 0) || (item.iceLevels && item.iceLevels.length > 0) || (item.modifiers && item.modifiers.length > 0)) {
+    selectedProductForOptions.value = item
+    selectedOptions.value = {
+      size: item.sizes && item.sizes.length > 0 ? item.sizes[0].name : '',
+      sugarLevel: item.sugarLevels && item.sugarLevels.length > 0 ? item.sugarLevels[2] || item.sugarLevels[0] : '', // Default to Normal (usually middle)
+      iceLevel: item.iceLevels && item.iceLevels.length > 0 ? item.iceLevels[2] || item.iceLevels[0] : '',
+      modifiers: []
+    }
   } else {
     cart.add(item)
   }
 }
-const confirmSizeAdd = () => {
-  if (sizeModalItem.value) {
-    cart.add(sizeModalItem.value, sizeModalSize.value)
-    sizeModalItem.value = null
-  }
+const confirmAddOptions = () => {
+  if (!selectedProductForOptions.value) return
+  
+  const item = selectedProductForOptions.value
+  const selectedMods = productModifiers(item).filter(m => selectedOptions.value.modifiers.includes(m.id))
+  
+  cart.add(item, {
+    size: selectedOptions.value.size || undefined,
+    sugarLevel: selectedOptions.value.sugarLevel || undefined,
+    iceLevel: selectedOptions.value.iceLevel || undefined,
+    modifiers: selectedMods,
+  })
+  
+  selectedProductForOptions.value = null
 }
 
 // ── Emoji fallback ───────────────────────────────────────

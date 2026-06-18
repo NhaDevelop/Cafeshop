@@ -309,7 +309,7 @@
             <div class="px-4 py-3 flex-1 space-y-1.5">
               <div v-for="item in order.items" :key="item.id" class="flex items-start justify-between gap-2 border-b border-slate-50 pb-2 last:border-0 last:pb-0">
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-semibold text-slate-800 truncate">{{ item.name }}<span v-if="item.size" class="text-xs font-normal text-slate-500"> ({{ item.size }})</span></p>
+                  <p class="text-sm font-semibold text-slate-800 truncate">{{ item.name }}<span v-if="item.size && typeof item.size === 'string'" class="text-xs font-normal text-slate-500"> ({{ item.size }})</span></p>
                   
                   <div class="flex flex-wrap gap-1 mt-1">
                     <span v-if="item.sugarLevel" class="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"><Database :size="8"/> Sugar {{ item.sugarLevel }}</span>

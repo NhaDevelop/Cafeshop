@@ -40,6 +40,9 @@
           <NuxtLink to="/admin/loyalty" class="nav-item" :class="{ active: route.path.startsWith('/admin/loyalty') }">
             <Users :size="20" class="nav-icon" /> <span class="nav-text">Loyalty</span>
           </NuxtLink>
+          <NuxtLink to="/admin/tables" class="nav-item" :class="{ active: route.path.startsWith('/admin/tables') }">
+            <Utensils :size="20" class="nav-icon" /> <span class="nav-text">Tables</span>
+          </NuxtLink>
           <NuxtLink to="/admin/expenses" class="nav-item" :class="{ active: route.path.startsWith('/admin/expenses') }">
             <Wallet :size="20" class="nav-icon" /> <span class="nav-text">Expenses</span>
           </NuxtLink>
@@ -81,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { Monitor, ChefHat, LayoutDashboard, LineChart, Package, LogOut, Coffee, Clock, User, Users, CalendarDays, Wallet, Layers } from '@lucide/vue'
+import { Monitor, ChefHat, LayoutDashboard, LineChart, Package, LogOut, Coffee, Clock, User, Users, CalendarDays, Wallet, Layers, Utensils } from '@lucide/vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -113,6 +116,7 @@ const pageTitle = computed(() => {
   if (route.path.startsWith('/admin/inventory'))   return 'Inventory Management'
   if (route.path.startsWith('/admin/shifts'))      return 'Shift Management'
   if (route.path.startsWith('/admin/loyalty'))     return 'Customer Loyalty'
+  if (route.path.startsWith('/admin/tables'))      return 'Table Tracking'
   if (route.path.startsWith('/admin/expenses'))    return 'Expense Tracking'
   if (route.path.startsWith('/kitchen'))           return 'Kitchen Display'
   if (route.path.startsWith('/pos'))               return 'POS Terminal'

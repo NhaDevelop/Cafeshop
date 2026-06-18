@@ -30,6 +30,8 @@ export interface MenuItem {
   sizes?: ProductSize[];
   modifiers?: ProductModifier[];
   productType?: 'beverage' | 'food';
+  sugarLevels?: string[];
+  iceLevels?: string[];
 }
 
 export interface CreateMenuItemDTO {
