@@ -29,6 +29,7 @@ export interface MenuItem {
   discount?: number;
   sizes?: ProductSize[];
   modifiers?: ProductModifier[];
+  productType?: 'beverage' | 'food';
 }
 
 export interface CreateMenuItemDTO {

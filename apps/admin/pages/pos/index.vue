@@ -6,17 +6,17 @@
       <button
         v-for="tab in tabs"
         :key="tab.id"
-        class="flex items-center gap-2 px-5 py-3.5 text-sm font-bold border-b-2 transition-all duration-200"
+        class="flex items-center gap-2.5 px-7 py-5 text-base font-bold border-b-2 transition-all duration-200"
         :class="activeTab === tab.id
           ? 'border-indigo-600 text-indigo-600'
           : 'border-transparent text-slate-400 hover:text-slate-600'"
         @click="activeTab = tab.id as 'pos' | 'orders'"
       >
-        <component :is="tab.icon" :size="16" />
+        <component :is="tab.icon" :size="20" />
         {{ tab.label }}
         <span
           v-if="tab.badge !== undefined && tab.badge > 0"
-          class="min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-black flex items-center justify-center"
+          class="min-w-[22px] h-5 px-1.5 rounded-full text-xs font-black flex items-center justify-center"
           :class="tab.id === 'orders' ? 'bg-red-500 text-white animate-pulse' : 'bg-indigo-100 text-indigo-600'"
         >{{ tab.badge }}</span>
       </button>
@@ -92,10 +92,10 @@
                 </div>
               </div>
               <div class="p-3.5">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-indigo-500 mb-0.5">{{ getCategoryName(item.categoryId) }}</p>
-                <p class="text-sm font-bold text-slate-800 truncate">{{ item.name }}</p>
+                <p class="text-[11px] font-bold uppercase tracking-widest text-indigo-500 mb-1">{{ getCategoryName(item.categoryId) }}</p>
+                <p class="text-base font-bold text-slate-800 truncate">{{ item.name }}</p>
                 <div class="mt-3 flex items-center justify-between">
-                  <span class="text-base font-black text-slate-900">{{ productPriceLabel(item) }}</span>
+                  <span class="text-lg font-black text-slate-900">{{ productPriceLabel(item) }}</span>
                   <div v-if="getCartQty(item.id) > 0 && !productHasOptions(item)" class="flex items-center gap-1.5" @click.stop>
                     <button class="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition-colors" @click.stop="decrementFromGrid(item.id)">
                       <Minus :size="12" stroke-width="3" />
@@ -152,7 +152,7 @@
           </div>
           <div v-for="item in cartStore.items" :key="item.id" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors group/item">
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-slate-800 truncate">{{ item.name }}<span v-if="item.size" class="text-xs font-normal text-slate-400"> ({{ item.size }})</span></p>
+              <p class="text-base font-bold text-slate-800 truncate">{{ item.name }}<span v-if="item.size" class="text-sm font-normal text-slate-500"> ({{ item.size }})</span></p>
               
               <div class="flex flex-wrap gap-1 mt-1">
                 <span v-if="item.sugarLevel" class="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"><Database :size="8"/> Sugar {{ item.sugarLevel }}</span>
@@ -247,19 +247,19 @@
       </div>
 
       <!-- Status filter -->
-      <div class="bg-white border-b border-slate-100 px-6 py-3 flex gap-2 flex-shrink-0">
+      <div class="bg-white border-b border-slate-100 px-6 py-4 flex gap-3 flex-shrink-0">
         <button
           v-for="f in orderFilters"
           :key="f.value"
-          class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-semibold transition-all"
+          class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
           :class="orderStatusFilter === f.value
             ? `${f.activeBg} ${f.activeText}`
             : 'bg-slate-100 text-slate-500 hover:bg-slate-200'"
           @click="orderStatusFilter = f.value"
         >
-          <span class="w-2 h-2 rounded-full" :class="f.dot"></span>
+          <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :class="f.dot"></span>
           {{ f.label }}
-          <span class="text-[10px] font-black">{{ getOrderCount(f.value) }}</span>
+          <span class="text-xs font-black bg-white/60 px-1.5 py-0.5 rounded-lg min-w-[20px] text-center">{{ getOrderCount(f.value) }}</span>
         </button>
       </div>
 
