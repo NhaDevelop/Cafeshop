@@ -506,7 +506,7 @@ import { orderRepository } from '../src/data/repositories/order.repository'
 definePageMeta({ layout: false })
 
 const menu  = useMenuStore()
-const cart  = useCartStore()
+const cart  = useCustomerCartStore()
 const route = useRoute()
 
 const activeTab = ref<'menu' | 'orders'>('menu')

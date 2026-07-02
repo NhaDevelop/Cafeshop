@@ -18,7 +18,7 @@
 
 <script setup lang="ts">
 import { Coffee, ShoppingCart } from '@lucide/vue'
-const cart = useCartStore()
+const cart = useCustomerCartStore()
 </script>
 
 <style scoped>

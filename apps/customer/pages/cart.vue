@@ -188,7 +188,7 @@ import {
   ArrowLeft, MapPin, Minus, Plus, X, Pencil, AlertTriangle, ShoppingBag
 } from '@lucide/vue'
 
-const cart    = useCartStore()
+const cart    = useCustomerCartStore()
 const router  = useRouter()
 const note    = ref('')
 const placing = ref(false)

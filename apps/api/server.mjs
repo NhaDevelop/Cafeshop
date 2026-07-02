@@ -71,9 +71,9 @@ const server = http.createServer(async (req, res) => {
     return order ? json(res, order) : json(res, { error: 'Not found' }, 404)
   }
 
-  // POST /orders  (customer places order)
   if (req.method === 'POST' && path === '/orders') {
     const data = await readBody(req)
+    console.log('[API POST /orders] Incoming items:', JSON.stringify(data.items, null, 2))
     const items = (data.items ?? []).map((i, idx) => {
       const basePrice = i.price || 0
       const modifiersTotal = (i.modifiers ?? []).reduce((sum, mod) => sum + mod.price, 0)

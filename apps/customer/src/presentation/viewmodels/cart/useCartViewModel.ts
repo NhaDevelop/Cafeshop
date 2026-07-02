@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import type { MenuItem } from '../../../types'
 import { calculateTotal } from '../../../utils'
 interface CartItem { id: string; menuItemId: string; name: string; price: number; quantity: number; subtotal: number; note?: string; size?: string; sugarLevel?: string; iceLevel?: string; modifiers?: any[] }
-export const useCartStore = defineStore('cart', () => {
+export const useCustomerCartStore = defineStore('customer_cart', () => {
   const items   = ref<CartItem[]>([])
   const tableId = ref<string | null>(null)
   const totals  = computed(() => calculateTotal(items.value.reduce((s, i) => s + i.subtotal, 0)))
